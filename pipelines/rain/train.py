@@ -96,8 +96,8 @@ def _get_train_data_loader(batch_size, training_dir, is_distributed, **kwargs):
 def _get_test_data_loader(test_batch_size, test_dir, test_file="test.csv", **kwargs):
     logger.info("Get test data loader")
     dataset = RainDataset(
-        "train.csv",
-        test_file
+        test_file,
+        test_dir
     )
     return torch.utils.data.DataLoader(
         dataset,
@@ -149,7 +149,7 @@ def train(args):
         torch.cuda.manual_seed(args.seed)
 
     train_loader = _get_train_data_loader(args.batch_size, args.data_dir, is_distributed, **kwargs)
-    test_loader = _get_test_data_loader(args.test_batch_size, args.data_dir, **kwargs)
+    
 
     logger.debug(
         "Processes {}/{} ({:.0f}%) of train data".format(
@@ -159,13 +159,13 @@ def train(args):
         )
     )
 
-    logger.debug(
-        "Processes {}/{} ({:.0f}%) of test data".format(
-            len(test_loader.sampler),
-            len(test_loader.dataset),
-            100.0 * len(test_loader.sampler) / len(test_loader.dataset),
-        )
-    )
+    # logger.debug(
+    #     "Processes {}/{} ({:.0f}%) of test data".format(
+    #         len(test_loader.sampler),
+    #         len(test_loader.dataset),
+    #         100.0 * len(test_loader.sampler) / len(test_loader.dataset),
+    #     )
+    # )
 
     model = Net().to(device)
     if is_distributed and use_cuda:
@@ -294,7 +294,7 @@ if __name__ == "__main__":
     parser.add_argument("--hosts", type=list, default=json.loads(os.environ["SM_HOSTS"]))
     parser.add_argument("--current-host", type=str, default=os.environ["SM_CURRENT_HOST"])
     parser.add_argument("--model-dir", type=str, default=os.environ["SM_MODEL_DIR"])
-    parser.add_argument("--data-dir", type=str, default=os.environ["SM_CHANNEL_TRAINING"])
+    parser.add_argument("--data-dir", type=str, default=os.environ["SM_CHANNEL_TRAIN"])
     parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
 
     train(parser.parse_args())
