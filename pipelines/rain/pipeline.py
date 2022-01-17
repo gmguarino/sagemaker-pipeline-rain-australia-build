@@ -16,6 +16,7 @@ import sagemaker
 import sagemaker.session
 
 from sagemaker.estimator import Estimator
+from sagemaker.pytorch import PyTorch
 from sagemaker.inputs import TrainingInput
 from sagemaker.model_metrics import (
     MetricsSource,
@@ -76,6 +77,7 @@ def get_session(region, default_bucket):
         default_bucket=default_bucket,
     )
 
+
 def resolve_ecr_uri_from_image_versions(sagemaker_session, image_versions, image_name):
     """ Gets ECR URI from image versions
     Args:
@@ -87,7 +89,7 @@ def resolve_ecr_uri_from_image_versions(sagemaker_session, image_versions, image
         ECR URI of the image version
     """
 
-    #Fetch image details to get the Base Image URI
+    # Fetch image details to get the Base Image URI
     for image_version in image_versions:
         if image_version['ImageVersionStatus'] == 'CREATED':
             image_arn = image_version["ImageVersionArn"]
@@ -99,6 +101,7 @@ def resolve_ecr_uri_from_image_versions(sagemaker_session, image_versions, image
             )
             return response['ContainerImage']
     return None
+
 
 def resolve_ecr_uri(sagemaker_session, image_arn):
     """Gets the ECR URI from the image name
@@ -115,7 +118,7 @@ def resolve_ecr_uri(sagemaker_session, image_arn):
     image_name = image_arn.partition("image/")[2]
     try:
         # Fetch the image versions
-        next_token=''
+        next_token = ''
         while True:
             response = sagemaker_session.sagemaker_client.list_image_versions(
                 ImageName=image_name,
@@ -124,7 +127,8 @@ def resolve_ecr_uri(sagemaker_session, image_arn):
                 SortOrder='DESCENDING',
                 NextToken=next_token
             )
-            ecr_uri = resolve_ecr_uri_from_image_versions(sagemaker_session, response['ImageVersions'], image_name)
+            ecr_uri = resolve_ecr_uri_from_image_versions(
+                sagemaker_session, response['ImageVersions'], image_name)
             if "NextToken" in response:
                 next_token = response["NextToken"]
 
@@ -134,7 +138,7 @@ def resolve_ecr_uri(sagemaker_session, image_arn):
         # Return error if no versions of the image found
         error_message = (
             f"No image version found for image name: {image_name}"
-            )
+        )
         logger.error(error_message)
         raise Exception(error_message)
 
@@ -143,13 +147,14 @@ def resolve_ecr_uri(sagemaker_session, image_arn):
         logger.error(error_message)
         raise Exception(error_message)
 
+
 def get_pipeline(
     region,
     role=None,
     default_bucket=None,
-    model_package_group_name="AbalonePackageGroup",
-    pipeline_name="AbalonePipeline",
-    base_job_prefix="Abalone",
+    model_package_group_name="RainAuPackageGroup",
+    pipeline_name="RainAuPipeline",
+    base_job_prefix="RainAu",
     project_id="SageMakerProjectId"
 ):
     """Gets a SageMaker ML Pipeline instance working with on abalone data.
@@ -167,7 +172,8 @@ def get_pipeline(
         role = sagemaker.session.get_execution_role(sagemaker_session)
 
     # parameters for pipeline execution
-    processing_instance_count = ParameterInteger(name="ProcessingInstanceCount", default_value=1)
+    processing_instance_count = ParameterInteger(
+        name="ProcessingInstanceCount", default_value=1)
     processing_instance_type = ParameterString(
         name="ProcessingInstanceType", default_value="ml.m5.xlarge"
     )
@@ -182,80 +188,68 @@ def get_pipeline(
     )
     input_data = ParameterString(
         name="InputDataUrl",
-        default_value=f"s3://sagemaker-servicecatalog-seedcode-{region}/dataset/abalone-dataset.csv",
+        default_value="s3://rain-data-17012022/data/weatherAUS.csv"
+        # default_value=f"s3://sagemaker-servicecatalog-seedcode-{region}/dataset/abalone-dataset.csv",
     )
-    processing_image_name = "sagemaker-{0}-processing-imagebuild".format(project_id)
-    training_image_name = "sagemaker-{0}-training-imagebuild".format(project_id)
-    inference_image_name = "sagemaker-{0}-inference-imagebuild".format(project_id)
+    processing_image_name = "sagemaker-{0}-processing-imagebuild".format(
+        project_id)
+    training_image_name = "sagemaker-{0}-training-imagebuild".format(
+        project_id)
+    inference_image_name = "sagemaker-{0}-inference-imagebuild".format(
+        project_id)
 
-    # processing step for feature engineering
-    try:
-        processing_image_uri = sagemaker_session.sagemaker_client.describe_image_version(ImageName=processing_image_name)['ContainerImage']
-    except (sagemaker_session.sagemaker_client.exceptions.ResourceNotFound):
-        processing_image_uri = sagemaker.image_uris.retrieve(
-            framework="xgboost",
-            region=region,
-            version="1.0-1",
-            py_version="py3",
-            instance_type=processing_instance_type,
-        )
-    script_processor = ScriptProcessor(
-        image_uri=processing_image_uri,
+    # # processing step for feature engineering
+    # try:
+    #     processing_image_uri = sagemaker_session.sagemaker_client.describe_image_version(
+    #         ImageName=processing_image_name)['ContainerImage']
+    # except (sagemaker_session.sagemaker_client.exceptions.ResourceNotFound):
+    #     processing_image_uri = sagemaker.image_uris.retrieve(
+    #         framework="xgboost",
+    #         region=region,
+    #         version="1.0-1",
+    #         py_version="py3",
+    #         instance_type=processing_instance_type,
+        # )
+    sklearn_processor = SKLearnProcessor(
+        framework_version='0.20.0',
         instance_type=processing_instance_type,
         instance_count=processing_instance_count,
-        base_job_name=f"{base_job_prefix}/sklearn-abalone-preprocess",
+        volume_size_in_gb=15,
+        base_job_name=f"{base_job_prefix}/sklearn-rain-au-preprocess",
         command=["python3"],
         sagemaker_session=sagemaker_session,
         role=role,
     )
     step_process = ProcessingStep(
         name="PreprocessAbaloneData",
-        processor=script_processor,
+        processor=sklearn_processor,
         outputs=[
-            ProcessingOutput(output_name="train", source="/opt/ml/processing/train"),
-            ProcessingOutput(output_name="validation", source="/opt/ml/processing/validation"),
-            ProcessingOutput(output_name="test", source="/opt/ml/processing/test"),
+            ProcessingOutput(output_name="train",
+                             source="/opt/ml/processing/train"),
+            ProcessingOutput(output_name="validation",
+                             source="/opt/ml/processing/validation"),
+            ProcessingOutput(output_name="test",
+                             source="/opt/ml/processing/test"),
         ],
         code=os.path.join(BASE_DIR, "preprocess.py"),
         job_arguments=["--input-data", input_data],
     )
 
-    # training step for generating model artifacts
-    model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/AbaloneTrain"
+    model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/model"
 
-    try:
-        training_image_uri = sagemaker_session.sagemaker_client.describe_image_version(ImageName=training_image_name)['ContainerImage']
-    except (sagemaker_session.sagemaker_client.exceptions.ResourceNotFound):
-        training_image_uri = sagemaker.image_uris.retrieve(
-            framework="xgboost",
-            region=region,
-            version="1.0-1",
-            py_version="py3",
-            instance_type=training_instance_type,
-        )
-
-    xgb_train = Estimator(
-        image_uri=training_image_uri,
-        instance_type=training_instance_type,
-        instance_count=1,
-        output_path=model_path,
-        base_job_name=f"{base_job_prefix}/abalone-train",
-        sagemaker_session=sagemaker_session,
-        role=role,
-    )
-    xgb_train.set_hyperparameters(
-        objective="reg:linear",
-        num_round=50,
-        max_depth=5,
-        eta=0.2,
-        gamma=4,
-        min_child_weight=6,
-        subsample=0.7,
-        silent=0,
-    )
+    pytorch_estimator = PyTorch('train.py',
+                            instance_type=training_instance_type,
+                            instance_count=1,
+                            framework_version='1.8.0',
+                            py_version='py3',
+                            base_job_name=f"{base_job_prefix}/torch-rain-au-train",
+                            output_path = model_path,
+                            hyperparameters = {'epochs': 50, 'batch-size': 32, 'learning-rate': 0.00009})
+    # pytorch_estimator.fit({'train': 's3://my-data-bucket/path/to/my/training/data',
+    #                     'test': 's3://my-data-bucket/path/to/my/test/data'})
     step_train = TrainingStep(
-        name="TrainAbaloneModel",
-        estimator=xgb_train,
+        name="TrainRainModel",
+        estimator=pytorch_estimator,
         inputs={
             "train": TrainingInput(
                 s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
@@ -263,14 +257,40 @@ def get_pipeline(
                 ].S3Output.S3Uri,
                 content_type="text/csv",
             ),
-            "validation": TrainingInput(
+            "test": TrainingInput(
                 s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
-                    "validation"
+                    "test"
                 ].S3Output.S3Uri,
                 content_type="text/csv",
             ),
+        
         },
     )
+    # Model needs to be saved locally in /opt/ml/processing/model/model.tar.gz and loaded by the evaluate script 
+    # on startup. Need to create a model_folder subfolder and puts the model.pth artifact inside. Puts inside a code/
+    # folder with inference.py serving script and a requirements folder. Read more details at:
+    # https://sagemaker.readthedocs.io/en/stable/frameworks/pytorch/using_pytorch.html#the-sagemaker-pytorch-model-server
+    # READ WHOLE PAGE
+
+    # model.tar.gz/
+    #     |- model.pth
+    #     |- code/
+    #         |- inference.py
+    #         |- requirements.txt 
+
+    # Need a registration step that gets the saved pytorch model tarball and then does puts it in registry.
+
+    # training step for generating model artifacts
+    
+
+
+    pytorch_validator = PyTorch('evaluate.py',
+                        instance_type=training_instance_type,
+                        instance_count=1,
+                        framework_version='1.8.0',
+                        py_version='py3',
+                        base_job_name=f"{base_job_prefix}/torch-rain-au-validate",
+                        hyperparameters = {'epochs': 50, 'batch-size': 32, 'learning-rate': 0.00009})
 
     # processing step for evaluation
     script_eval = ScriptProcessor(
@@ -303,7 +323,8 @@ def get_pipeline(
             ),
         ],
         outputs=[
-            ProcessingOutput(output_name="evaluation", source="/opt/ml/processing/evaluation"),
+            ProcessingOutput(output_name="evaluation",
+                             source="/opt/ml/processing/evaluation"),
         ],
         code=os.path.join(BASE_DIR, "evaluate.py"),
         property_files=[evaluation_report],
@@ -320,7 +341,8 @@ def get_pipeline(
     )
 
     try:
-        inference_image_uri = sagemaker_session.sagemaker_client.describe_image_version(ImageName=inference_image_name)['ContainerImage']
+        inference_image_uri = sagemaker_session.sagemaker_client.describe_image_version(
+            ImageName=inference_image_name)['ContainerImage']
     except (sagemaker_session.sagemaker_client.exceptions.ResourceNotFound):
         inference_image_uri = sagemaker.image_uris.retrieve(
             framework="xgboost",
