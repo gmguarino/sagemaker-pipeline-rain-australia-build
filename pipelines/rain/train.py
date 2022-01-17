@@ -3,6 +3,8 @@ import json
 import logging
 import os
 import sys
+import shutil
+import tarfile
 
 import pandas as pd
 import numpy as np
@@ -67,7 +69,7 @@ class Net(nn.Module):
 
 
 def _get_train_data_loader(batch_size, training_dir, is_distributed, **kwargs):
-    logger.info("Get train data loader")
+    logger.debug("Get train data loader")
     # dataset = datasets.MNIST(
     #     training_dir,
     #     train=True,
@@ -111,6 +113,12 @@ def _average_gradients(model):
     for param in model.parameters():
         dist.all_reduce(param.grad.data, op=dist.reduce_op.SUM)
         param.grad.data /= size
+
+
+def make_tarfile(output_filename, source_dir):
+    with tarfile.open(output_filename, "w:gz") as tar:
+        for filename in os.listdir(source_dir):
+            tar.add(os.path.join(source_dir, filename), arcname=filename)
 
 
 def train(args):
@@ -228,6 +236,12 @@ def save_model(model, model_dir):
     path = os.path.join(model_dir, "model.pth")
     # recommended way from http://pytorch.org/docs/master/notes/serialization.html
     torch.save(model.cpu().state_dict(), path)
+    inference_code_path = model_dir + "/code/"
+    if not os.path.exists(inference_code_path):
+        os.mkdir(inference_code_path)
+        logger.info("Created a folder at {}!".format(inference_code_path))
+    shutil.copy("inference.py", inference_code_path)
+    make_tarfile(os.path.join(model_dir, "model.tar.gz"), model_dir)
 
 
 if __name__ == "__main__":
