@@ -2,25 +2,22 @@
 import json
 import logging
 import pathlib
-import pickle
-import tarfile
-
+import os
+import argparse
 
 import pandas as pd
 import numpy as np
 
 #import sagemaker_containers
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 import torch.utils.data
 import torch.utils.data.distributed
-from torchvision import datasets, transforms
 from torch.utils.data import Dataset
 
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import (accuracy_score, 
+    precision_score, recall_score, f1_score)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -69,36 +66,11 @@ class Net(nn.Module):
         return F.sigmoid(self.out(x))
 
 
-def _get_train_data_loader(batch_size, training_dir, is_distributed, **kwargs):
-    logger.info("Get train data loader")
-    # dataset = datasets.MNIST(
-    #     training_dir,
-    #     train=True,
-    #     transform=transforms.Compose(
-    #         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-    #     ),
-    # )
-    dataset = RainDataset(
-        "train.csv",
-        training_dir
-    )
-    train_sampler = (
-        torch.utils.data.distributed.DistributedSampler(dataset) if is_distributed else None
-    )
-    return torch.utils.data.DataLoader(
-        dataset,
-        batch_size=batch_size,
-        shuffle=train_sampler is None,
-        sampler=train_sampler,
-        **kwargs
-    )
-
-
 def _get_test_data_loader(test_batch_size, test_dir, test_file="test.csv", **kwargs):
     logger.info("Get test data loader")
     dataset = RainDataset(
-        "train.csv",
-        test_file
+        test_file,
+        test_dir
     )
     return torch.utils.data.DataLoader(
         dataset,
@@ -107,70 +79,72 @@ def _get_test_data_loader(test_batch_size, test_dir, test_file="test.csv", **kwa
         **kwargs
     )
 
-
-def _average_gradients(model):
-    # Gradient averaging.
-    size = float(dist.get_world_size())
-    for param in model.parameters():
-        dist.all_reduce(param.grad.data, op=dist.reduce_op.SUM)
-        param.grad.data /= size
-
 def test(model, test_loader, device):
     model.eval()
     test_loss = 0
     correct = 0
+    result_dict = {"accuracy":[], "precision":[], "recall":[], "f1_score":[]}
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, size_average=False).item()  # sum up batch loss
-            pred = output.max(1, keepdim=True)[1]  # get the index of the max log-probability
-            correct += pred.eq(target.view_as(pred)).sum().item()
+            test_loss += F.binary_cross_entropy(output, target, size_average=False).item()  # sum up batch loss
+            result_dict["accuracy"].append(accuracy_score(target.to("cpu").numpy(), data.to("cpu").numpy()))
+            result_dict["precision"].append(precision_score(target.to("cpu").numpy(), data.to("cpu").numpy()))
+            result_dict["recall"].append(recall_score(target.to("cpu").numpy(), data.to("cpu").numpy()))
+            result_dict["f1_score"].append(f1_score(target.to("cpu").numpy(), data.to("cpu").numpy()))
 
+    for key in result_dict.keys():
+        mean = sum(result_dict[key]) / len(result_dict[key])
+        result_dict[key] = mean
+            
     test_loss /= len(test_loader.dataset)
-    logger.info(
-        "Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-            test_loss, correct, len(test_loader.dataset), 100.0 * correct / len(test_loader.dataset)
-        )
+    logger.debug(
+        "Test set stats: \n Num examples: {},  \n {}".format(result_dict, result_dict)
     )
+    return {"regression_metrics": result_dict}
+
+
+def model_fn(model_dir):
+    model = Net()
+    with open(os.path.join(model_dir, 'model.pth'), 'rb') as f:
+        model.load_state_dict(torch.load(f))
+    return model
+
 
 if __name__ == "__main__":
-    logger.debug("Starting evaluation.")
-    model_path = "/opt/ml/processing/model/model.tar.gz"
-    with tarfile.open(model_path) as tar:
-        tar.extractall(path=".")
+    parser = argparse.ArgumentParser()
 
-    logger.debug("Loading xgboost model.")
-    model = pickle.load(open("xgboost-model", "rb"))
+    parser.add_argument(
+        "--test-batch-size",
+        type=int,
+        default=1000,
+        metavar="N",
+        help="input batch size for testing (default: 1000)",
+    )
+    parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
+    args = parser.parse_args()
 
-    logger.debug("Reading test data.")
-    test_path = "/opt/ml/processing/test/test.csv"
-    df = pd.read_csv(test_path, header=None)
+    use_cuda = args.num_gpus > 0
+    logger.debug("Number of gpus available - {}".format(args.num_gpus))
+    kwargs = {"num_workers": 1, "pin_memory": True} if use_cuda else {}
+    device = torch.device("cuda" if use_cuda else "cpu")
 
-    logger.debug("Reading test data.")
-    y_test = df.iloc[:, 0].to_numpy()
-    df.drop(df.columns[0], axis=1, inplace=True)
-    X_test = xgboost.DMatrix(df.values)
+    logger.debug("Loading Model...")
+    model_path = "/opt/ml/processing/model/"
+    model = model_fn(model_dir=model_path).to(device)
+    model = torch.nn.DataParallel(model)
 
-    logger.info("Performing predictions against test data.")
-    predictions = model.predict(X_test)
+    logger.debug("Loading DataLoader...")
+    validation_folder = "/opt/ml/processing/validation"
+    test_loader = _get_test_data_loader(args.test_batch_size, validation_folder, "validation.csv")
 
-    logger.debug("Calculating mean squared error.")
-    mse = mean_squared_error(y_test, predictions)
-    std = np.std(y_test - predictions)
-    report_dict = {
-        "regression_metrics": {
-            "mse": {
-                "value": mse,
-                "standard_deviation": std
-            },
-        },
-    }
+    logger.debug("Testing!!")
+    result_dict = test(model, test_loader, device)
 
     output_dir = "/opt/ml/processing/evaluation"
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    logger.info("Writing out evaluation report with mse: %f", mse)
     evaluation_path = f"{output_dir}/evaluation.json"
     with open(evaluation_path, "w") as f:
-        f.write(json.dumps(report_dict))
+        f.write(json.dumps(result_dict))
