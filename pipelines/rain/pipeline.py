@@ -322,22 +322,22 @@ def get_pipeline(
         )
     )
 
-    try:
-        inference_image_uri = sagemaker_session.sagemaker_client.describe_image_version(
-            ImageName=inference_image_name)['ContainerImage']
-    except (sagemaker_session.sagemaker_client.exceptions.ResourceNotFound):
-        inference_image_uri = sagemaker.image_uris.retrieve(
-            framework="xgboost",
-            region=region,
-            version="1.0-1",
-            py_version="py3",
-            instance_type=inference_instance_type,
-        )
+    # try:
+    #     inference_image_uri = sagemaker_session.sagemaker_client.describe_image_version(
+    #         ImageName=inference_image_name)['ContainerImage']
+    # except (sagemaker_session.sagemaker_client.exceptions.ResourceNotFound):
+    #     inference_image_uri = sagemaker.image_uris.retrieve(
+    #         framework="xgboost",
+    #         region=region,
+    #         version="1.0-1",
+    #         py_version="py3",
+    #         instance_type=inference_instance_type,
+    #     )
     step_register = RegisterModel(
         name="RegisterRainAuModel",
         estimator=pytorch_estimator,
         # model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
-        model_data=os.path.join(model_path, "model.tar.gz")
+        model_data=os.path.join(model_path, "model.tar.gz"),
         content_types=["text/csv"],
         response_types=["text/csv"],
         inference_instances=["ml.t2.medium", "ml.m5.large"],
