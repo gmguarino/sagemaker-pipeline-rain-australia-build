@@ -15,7 +15,6 @@ import logging
 import sagemaker
 import sagemaker.session
 
-from sagemaker.estimator import Estimator
 from sagemaker.pytorch import PyTorch
 from sagemaker.inputs import TrainingInput
 from sagemaker.model_metrics import (
@@ -25,7 +24,6 @@ from sagemaker.model_metrics import (
 from sagemaker.processing import (
     ProcessingInput,
     ProcessingOutput,
-    ScriptProcessor,
     FrameworkProcessor
 )
 from sagemaker.sklearn.processing import SKLearnProcessor
