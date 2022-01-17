@@ -243,7 +243,7 @@ def get_pipeline(
                             py_version='py3',
                             base_job_name=f"{base_job_prefix}/torch-rain-au-train",
                             output_path=model_path,
-                            hyperparameters={'epochs': 50, 'batch-size': 32, 'learning-rate': 0.00009},
+                            hyperparameters={'epochs': 1, 'batch-size': 32, 'learning-rate': 0.00009},
                             role=role)
 
     # pytorch_estimator.fit({'train': 's3://my-data-bucket/path/to/my/training/data',
