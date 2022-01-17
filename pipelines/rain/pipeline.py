@@ -26,6 +26,7 @@ from sagemaker.processing import (
     ProcessingInput,
     ProcessingOutput,
     ScriptProcessor,
+    FrameworkProcessor
 )
 from sagemaker.sklearn.processing import SKLearnProcessor
 from sagemaker.workflow.conditions import ConditionLessThanOrEqualTo
@@ -237,16 +238,19 @@ def get_pipeline(
 
     model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/model"
 
-    pytorch_estimator = PyTorch('train.py',
+    pytorch_estimator = PyTorch(os.path.join(BASE_DIR, 'train.py'),
                             instance_type=training_instance_type,
                             instance_count=1,
                             framework_version='1.8.0',
                             py_version='py3',
                             base_job_name=f"{base_job_prefix}/torch-rain-au-train",
-                            output_path = model_path,
-                            hyperparameters = {'epochs': 50, 'batch-size': 32, 'learning-rate': 0.00009})
+                            output_path=model_path,
+                            hyperparameters={'epochs': 50, 'batch-size': 32, 'learning-rate': 0.00009},
+                            role=role)
+
     # pytorch_estimator.fit({'train': 's3://my-data-bucket/path/to/my/training/data',
     #                     'test': 's3://my-data-bucket/path/to/my/test/data'})
+
     step_train = TrainingStep(
         name="TrainRainModel",
         estimator=pytorch_estimator,
@@ -256,70 +260,50 @@ def get_pipeline(
                     "train"
                 ].S3Output.S3Uri,
                 content_type="text/csv",
-            ),
-            "test": TrainingInput(
-                s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
-                    "test"
-                ].S3Output.S3Uri,
-                content_type="text/csv",
-            ),
-        
-        },
+            )
+        }
     )
-    # Model needs to be saved locally in /opt/ml/processing/model/model.tar.gz and loaded by the evaluate script 
-    # on startup. Need to create a model_folder subfolder and puts the model.pth artifact inside. Puts inside a code/
-    # folder with inference.py serving script and a requirements folder. Read more details at:
-    # https://sagemaker.readthedocs.io/en/stable/frameworks/pytorch/using_pytorch.html#the-sagemaker-pytorch-model-server
-    # READ WHOLE PAGE
-
-    # model.tar.gz/
-    #     |- model.pth
-    #     |- code/
-    #         |- inference.py
-    #         |- requirements.txt 
-
-    # Need a registration step that gets the saved pytorch model tarball and then does puts it in registry.
-
-    # training step for generating model artifacts
-    
 
 
-    pytorch_validator = PyTorch('evaluate.py',
-                        instance_type=training_instance_type,
-                        instance_count=1,
-                        framework_version='1.8.0',
-                        py_version='py3',
-                        base_job_name=f"{base_job_prefix}/torch-rain-au-validate",
-                        hyperparameters = {'epochs': 50, 'batch-size': 32, 'learning-rate': 0.00009})
-
-    # processing step for evaluation
-    script_eval = ScriptProcessor(
-        image_uri=training_image_uri,
-        command=["python3"],
+    pytorch_processor = FrameworkProcessor(
+        PyTorch,
         instance_type=processing_instance_type,
         instance_count=1,
-        base_job_name=f"{base_job_prefix}/script-abalone-eval",
+        framework_version='1.8.0',
+        base_job_name=f"{base_job_prefix}/torch-rain-au-eval",
         sagemaker_session=sagemaker_session,
         role=role,
+        command=["python3"],
     )
+
+    # # processing step for evaluation
+    # script_eval = ScriptProcessor(
+    #     image_uri=training_image_uri,
+    #     command=["python3"],
+    #     instance_type=processing_instance_type,
+    #     instance_count=1,
+    #     base_job_name=f"{base_job_prefix}/script-abalone-eval",
+    #     sagemaker_session=sagemaker_session,
+    #     role=role,
+    # )
     evaluation_report = PropertyFile(
-        name="AbaloneEvaluationReport",
+        name="RainAuEvaluationReport",
         output_name="evaluation",
         path="evaluation.json",
     )
     step_eval = ProcessingStep(
-        name="EvaluateAbaloneModel",
-        processor=script_eval,
+        name="EvaluateRainAuModel",
+        processor=pytorch_processor,
         inputs=[
             ProcessingInput(
-                source=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+                source=model_path,
                 destination="/opt/ml/processing/model",
             ),
             ProcessingInput(
                 source=step_process.properties.ProcessingOutputConfig.Outputs[
-                    "test"
+                    "validation"
                 ].S3Output.S3Uri,
-                destination="/opt/ml/processing/test",
+                destination="/opt/ml/processing/validation",
             ),
         ],
         outputs=[
@@ -352,10 +336,10 @@ def get_pipeline(
             instance_type=inference_instance_type,
         )
     step_register = RegisterModel(
-        name="RegisterAbaloneModel",
-        estimator=xgb_train,
-        image_uri=inference_image_uri,
-        model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+        name="RegisterRainAuModel",
+        estimator=pytorch_estimator,
+        # model_data=step_train.properties.ModelArtifacts.S3ModelArtifacts,
+        model_data=os.path.join(model_path, "model.tar.gz")
         content_types=["text/csv"],
         response_types=["text/csv"],
         inference_instances=["ml.t2.medium", "ml.m5.large"],
@@ -370,12 +354,12 @@ def get_pipeline(
         left=JsonGet(
             step_name=step_eval.name,
             property_file=evaluation_report,
-            json_path="regression_metrics.mse.value"
+            json_path="metrics.accuracy"
         ),
-        right=6.0,
+        right=0.7,
     )
     step_cond = ConditionStep(
-        name="CheckMSEAbaloneEvaluation",
+        name="CheckAccRainAuEvaluation",
         conditions=[cond_lte],
         if_steps=[step_register],
         else_steps=[],
@@ -394,4 +378,21 @@ def get_pipeline(
         steps=[step_process, step_train, step_eval, step_cond],
         sagemaker_session=sagemaker_session,
     )
+
+    # Model needs to be saved locally in /opt/ml/processing/model/model.tar.gz and loaded by the evaluate script 
+    # on startup. Need to create a model_folder subfolder and puts the model.pth artifact inside. Puts inside a code/
+    # folder with inference.py serving script and a requirements folder. Read more details at:
+    # https://sagemaker.readthedocs.io/en/stable/frameworks/pytorch/using_pytorch.html#the-sagemaker-pytorch-model-server
+    # READ WHOLE PAGE
+
+    # model.tar.gz/
+    #     |- model.pth
+    #     |- code/
+    #         |- inference.py
+    #         |- requirements.txt 
+
+    # Need a registration step that gets the saved pytorch model tarball and then does puts it in registry.
+
+    # TODO: Prepare inference script to serve model!!!! 
+
     return pipeline
