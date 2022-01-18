@@ -53,6 +53,8 @@ from botocore.exceptions import ClientError
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def get_session(region, default_bucket):
@@ -349,7 +351,7 @@ def get_pipeline(
         model_data=os.path.join(model_path, "model.tar.gz"),
         content_types=["text/csv"],
         response_types=["text/csv"],
-        inference_instances=["ml.t2.medium", "ml.m5.large"],
+        inference_instances=["ml.m5.large"],
         transform_instances=["ml.m5.large"],
         model_package_group_name=model_package_group_name,
         approval_status=model_approval_status,
@@ -357,13 +359,15 @@ def get_pipeline(
     )
 
     # condition step for evaluating model quality and branching execution
+    # This is just a dummy condition at the moment
+
     cond_lte = ConditionLessThanOrEqualTo(
         left=JsonGet(
             step_name=step_eval.name,
             property_file=evaluation_report,
             json_path="metrics.accuracy"
         ),
-        right=0.7,
+        right=0.5,
     )
     step_cond = ConditionStep(
         name="CheckAccRainAuEvaluation",

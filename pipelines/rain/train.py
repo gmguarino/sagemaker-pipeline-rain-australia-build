@@ -20,7 +20,7 @@ import torch.utils.data.distributed
 from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 

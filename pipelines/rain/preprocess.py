@@ -3,9 +3,7 @@ import argparse
 import logging
 import os
 import pathlib
-import joblib
-import requests
-import tempfile
+import pickle
 
 import boto3
 import numpy as np
@@ -73,7 +71,7 @@ if __name__ == "__main__":
     bucket = input_data.split("/")[2]
     key = "/".join(input_data.split("/")[3:])
 
-    logger.info("Downloading data from bucket: %s, key: %s", bucket, key)
+    logger.debug("Downloading data from bucket: %s, key: %s", bucket, key)
     fn = f"{base_dir}/data/rain-au-dataset.csv"
     s3 = boto3.resource("s3")
     s3.Bucket(bucket).download_file(key, fn)
@@ -185,4 +183,5 @@ if __name__ == "__main__":
     test.to_csv(f"{base_dir}/test/test.csv", header=True, index=False)
     if not os.path.exists(f"{base_dir}/preprocess"):
         os.mkdir(f"{base_dir}/preprocess")
-    joblib.dump(s_scaler, f"{base_dir}/preprocess/scaler.joblib")
+    with open(f"{base_dir}/preprocess/scaler.joblib", 'wb') as dump_var:
+        pickle.dump(s_scaler, dump_var)
