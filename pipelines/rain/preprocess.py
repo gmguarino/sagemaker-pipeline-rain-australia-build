@@ -3,6 +3,7 @@ import argparse
 import logging
 import os
 import pathlib
+import joblib
 import requests
 import tempfile
 
@@ -182,3 +183,6 @@ if __name__ == "__main__":
         f"{base_dir}/validation/validation.csv", header=True, index=False
     )
     test.to_csv(f"{base_dir}/test/test.csv", header=True, index=False)
+    if not os.path.exists(f"{base_dir}/preprocess"):
+        os.mkdir(f"{base_dir}/preprocess")
+    joblib.dump(s_scaler, f"{base_dir}/preprocess/scaler.joblib")

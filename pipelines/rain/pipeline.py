@@ -17,6 +17,7 @@ import sagemaker.session
 
 from sagemaker.pytorch import PyTorch
 from sagemaker.inputs import TrainingInput
+from sagemaker.dataset_definition.inputs import S3Input
 from sagemaker.model_metrics import (
     MetricsSource,
     ModelMetrics,
@@ -229,6 +230,10 @@ def get_pipeline(
                              source="/opt/ml/processing/validation"),
             ProcessingOutput(output_name="test",
                              source="/opt/ml/processing/test"),
+            ProcessingOutput(output_name="test",
+                             source="/opt/ml/processing/test"),
+            ProcessingOutput(output_name="scaler",
+                             source="/opt/ml/processing/preprocess"),
         ],
         code=os.path.join(BASE_DIR, "preprocess.py"),
         job_arguments=["--input-data", input_data],
@@ -258,7 +263,12 @@ def get_pipeline(
                     "train"
                 ].S3Output.S3Uri,
                 content_type="text/csv",
-            )
+            ) # ,
+            # "scaler": TrainingInput(
+            #     s3_data=step_process.properties.ProcessingOutputConfig.Outputs[
+            #         "scaler"
+            #     ].S3Output.S3Uri,
+            # )
         }
     )
 
@@ -389,7 +399,5 @@ def get_pipeline(
     #         |- requirements.txt 
 
     # Need a registration step that gets the saved pytorch model tarball and then does puts it in registry.
-
-    # TODO: Prepare inference script to serve model!!!! 
 
     return pipeline
