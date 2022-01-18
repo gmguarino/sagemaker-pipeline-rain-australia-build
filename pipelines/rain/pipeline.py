@@ -229,6 +229,7 @@ def get_pipeline(
         sagemaker_session=sagemaker_session,
         role=role,
     )
+    input_data = "s3://rain-data-17012022/data/weatherAUS.csv"
     step_process = ProcessingStep(
         name="PreprocessRainAuData",
         processor=sklearn_processor,

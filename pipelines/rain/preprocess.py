@@ -56,6 +56,7 @@ if __name__ == "__main__":
     fn = f"{base_dir}/data/rain-au-dataset.csv"
     s3 = boto3.resource("s3")
     s3.Bucket(bucket).download_file(key, fn)
+    
 
     logger.debug("Reading downloaded data.")
     df = pd.read_csv(fn)
