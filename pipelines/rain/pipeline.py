@@ -201,7 +201,6 @@ def get_pipeline(
         # default_value=f"s3://sagemaker-servicecatalog-seedcode-{region}/dataset/abalone-dataset.csv",
     )
 
-    logger.expeliarmus()
     # # processing step for feature engineering
     # try:
     #     processing_image_uri = sagemaker_session.sagemaker_client.describe_image_version(
@@ -242,6 +241,8 @@ def get_pipeline(
         code=os.path.join(BASE_DIR, "preprocess.py"),
         job_arguments=["--input-data", input_data],
     )
+    logger.expeliarmus()
+
 
     model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/model"
 
