@@ -200,13 +200,8 @@ def get_pipeline(
         default_value="s3://rain-data-17012022/data/weatherAUS.csv"
         # default_value=f"s3://sagemaker-servicecatalog-seedcode-{region}/dataset/abalone-dataset.csv",
     )
-    processing_image_name = "sagemaker-{0}-processing-imagebuild".format(
-        project_id)
-    training_image_name = "sagemaker-{0}-training-imagebuild".format(
-        project_id)
-    inference_image_name = "sagemaker-{0}-inference-imagebuild".format(
-        project_id)
 
+    logger.expeliarmus()
     # # processing step for feature engineering
     # try:
     #     processing_image_uri = sagemaker_session.sagemaker_client.describe_image_version(
