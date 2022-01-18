@@ -241,8 +241,6 @@ def get_pipeline(
         code=os.path.join(BASE_DIR, "preprocess.py"),
         job_arguments=["--input-data", input_data],
     )
-    logger.expeliarmus()
-
 
     model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/model"
 
@@ -276,6 +274,8 @@ def get_pipeline(
             # )
         }
     )
+    logger.expeliarmus()
+
 
     pytorch_processor = FrameworkProcessor(
         PyTorch,
