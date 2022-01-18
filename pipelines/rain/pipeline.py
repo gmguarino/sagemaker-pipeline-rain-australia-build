@@ -9,6 +9,7 @@
 Implements a get_pipeline(**kwargs) method.
 """
 import os
+import sys
 
 import boto3
 import logging
