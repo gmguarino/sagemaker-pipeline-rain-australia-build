@@ -274,7 +274,6 @@ def get_pipeline(
             # )
         }
     )
-    logger.expeliarmus()
 
 
     pytorch_processor = FrameworkProcessor(
@@ -325,6 +324,7 @@ def get_pipeline(
         code=os.path.join(BASE_DIR, "evaluate.py"),
         property_files=[evaluation_report],
     )
+    logger.expeliarmus()
 
     # register model step that will be conditionally executed
     model_metrics = ModelMetrics(
