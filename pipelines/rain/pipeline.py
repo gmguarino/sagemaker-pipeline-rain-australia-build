@@ -59,8 +59,7 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.debug("Entered script")
 logger.info("Entered script")
 
-def test():
-    raise ValueError("test")
+
 
 def get_session(region, default_bucket):
     """Gets the sagemaker session based on the region.
@@ -394,7 +393,6 @@ def get_pipeline(
         steps=[step_process, step_train, step_eval, step_cond],
         sagemaker_session=sagemaker_session,
     )
-    test()
 
     # Model needs to be saved locally in /opt/ml/processing/model/model.tar.gz and loaded by the evaluate script 
     # on startup. Need to create a model_folder subfolder and puts the model.pth artifact inside. Puts inside a code/

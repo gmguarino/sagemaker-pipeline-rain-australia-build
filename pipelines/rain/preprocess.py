@@ -71,6 +71,9 @@ if __name__ == "__main__":
     bucket = input_data.split("/")[2]
     key = "/".join(input_data.split("/")[3:])
 
+    def test():
+        raise ValueError("test")
+
     logger.debug("Downloading data from bucket: %s, key: %s", bucket, key)
     fn = f"{base_dir}/data/rain-au-dataset.csv"
     s3 = boto3.resource("s3")
