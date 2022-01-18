@@ -63,6 +63,8 @@ def test():
 
 
 if __name__ == "__main__":
+    test()
+
     logger.debug("Starting preprocessing.")
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-data", type=str, required=True)
@@ -74,7 +76,6 @@ if __name__ == "__main__":
     bucket = input_data.split("/")[2]
     key = "/".join(input_data.split("/")[3:])
 
-    test()
 
     logger.debug("Downloading data from bucket: %s, key: %s", bucket, key)
     fn = f"{base_dir}/data/rain-au-dataset.csv"
