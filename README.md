@@ -1,2 +1,1 @@
-# Sagemaker Pipelines Demo Using Australian Rain Dataset
-# And PyTorch
+# Sagemaker Pipelines Demo Using Australian Rain Dataset And PyTorch
