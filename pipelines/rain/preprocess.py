@@ -5,7 +5,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 logger.debug("this is the preprocessing script")
-
+print("Is this logged?")
 def test():
     raise ValueError("test")
 test()
