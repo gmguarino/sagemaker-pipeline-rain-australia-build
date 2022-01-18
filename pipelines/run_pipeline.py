@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import argparse
 import json
 import sys
+import traceback
 
 from pipelines._utils import get_pipeline_driver, convert_struct
 
@@ -94,6 +95,7 @@ def main():  # pragma: no cover
         print(execution.list_steps())
         # Todo print the status?
     except Exception as e:  # pylint: disable=W0703
+        traceback.print_exc()
         print(f"Exception: {e}")
         sys.exit(1)
 
