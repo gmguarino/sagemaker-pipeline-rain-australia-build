@@ -1,14 +1,7 @@
 import logging
 import sys
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler(sys.stdout))
 
-logger.debug("this is the preprocessing script")
-print("Is this logged?")
-def test():
-    raise ValueError("test")
-test()
+
 
 import argparse
 import os
@@ -25,8 +18,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+pathlib.Path("/opt/ml/processing/logs").mkdir(parents=True, exist_ok=True)
 
-
+logger.addHandler(logging.FileHandler("/opt/ml/processing/logs/log.log"))
 
 
 def merge_two_dicts(x, y):
@@ -166,7 +162,6 @@ if __name__ == "__main__":
         f"{base_dir}/validation/validation.csv", header=True, index=False
     )
     test.to_csv(f"{base_dir}/test/test.csv", header=True, index=False)
-    if not os.path.exists(f"{base_dir}/preprocess"):
-        os.mkdir(f"{base_dir}/preprocess")
-    with open(f"{base_dir}/preprocess/scaler.joblib", 'wb') as dump_var:
+    pathlib.Path(f"{base_dir}/preprocess").mkdir(parents=True, exist_ok=True)
+    with open(f"{base_dir}/preprocess/scaler.pkl", 'wb') as dump_var:
         pickle.dump(s_scaler, dump_var)

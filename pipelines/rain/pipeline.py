@@ -218,6 +218,7 @@ def get_pipeline(
     #         py_version="py3",
     #         instance_type=processing_instance_type,
         # )
+    print("start preprocessing")
     sklearn_processor = SKLearnProcessor(
         framework_version='0.20.0',
         instance_type=processing_instance_type,
@@ -242,13 +243,18 @@ def get_pipeline(
                              source="/opt/ml/processing/test"),
             ProcessingOutput(output_name="scaler",
                              source="/opt/ml/processing/preprocess"),
+            ProcessingOutput(output_name="log",
+                             source="/opt/ml/processing/logs"),
         ],
         code=os.path.join(BASE_DIR, "preprocess.py"),
         job_arguments=["--input-data", input_data],
     )
+    print(step_process.properties.ProcessingOutputConfig.Outputs[
+                    "log"
+                ].S3Output.S3Uri)
 
     model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/model"
-
+    print("training")
     pytorch_estimator = PyTorch(os.path.join(BASE_DIR, 'train.py'),
                             instance_type=training_instance_type,
                             instance_count=1,
@@ -410,5 +416,5 @@ def get_pipeline(
     #         |- requirements.txt 
 
     # Need a registration step that gets the saved pytorch model tarball and then does puts it in registry.
-
+    print("done")
     return pipeline
