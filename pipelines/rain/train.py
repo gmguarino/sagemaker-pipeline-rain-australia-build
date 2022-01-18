@@ -17,7 +17,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data
 import torch.utils.data.distributed
-from torchvision import datasets, transforms
 from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
@@ -70,13 +69,6 @@ class Net(nn.Module):
 
 def _get_train_data_loader(batch_size, training_dir, is_distributed, **kwargs):
     logger.debug("Get train data loader")
-    # dataset = datasets.MNIST(
-    #     training_dir,
-    #     train=True,
-    #     transform=transforms.Compose(
-    #         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-    #     ),
-    # )
     dataset = RainDataset(
         "train.csv",
         training_dir
@@ -89,20 +81,6 @@ def _get_train_data_loader(batch_size, training_dir, is_distributed, **kwargs):
         batch_size=batch_size,
         shuffle=train_sampler is None,
         sampler=train_sampler,
-        **kwargs
-    )
-
-
-def _get_test_data_loader(test_batch_size, test_dir, test_file="test.csv", **kwargs):
-    logger.info("Get test data loader")
-    dataset = RainDataset(
-        test_file,
-        test_dir
-    )
-    return torch.utils.data.DataLoader(
-        dataset,
-        batch_size=test_batch_size,
-        shuffle=True,
         **kwargs
     )
 
@@ -149,7 +127,6 @@ def train(args):
         torch.cuda.manual_seed(args.seed)
 
     train_loader = _get_train_data_loader(args.batch_size, args.data_dir, is_distributed, **kwargs)
-    
 
     logger.debug(
         "Processes {}/{} ({:.0f}%) of train data".format(
@@ -159,13 +136,6 @@ def train(args):
         )
     )
 
-    # logger.debug(
-    #     "Processes {}/{} ({:.0f}%) of test data".format(
-    #         len(test_loader.sampler),
-    #         len(test_loader.dataset),
-    #         100.0 * len(test_loader.sampler) / len(test_loader.dataset),
-    #     )
-    # )
 
     model = Net().to(device)
     if is_distributed and use_cuda:
@@ -199,28 +169,7 @@ def train(args):
                         loss.item(),
                     )
                 )
-        # test(model, test_loader, device)
     save_model(model, args.model_dir)
-
-
-def test(model, test_loader, device):
-    model.eval()
-    test_loss = 0
-    correct = 0
-    with torch.no_grad():
-        for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            test_loss += F.nll_loss(output, target, size_average=False).item()  # sum up batch loss
-            pred = output.max(1, keepdim=True)[1]  # get the index of the max log-probability
-            correct += pred.eq(target.view_as(pred)).sum().item()
-
-    test_loss /= len(test_loader.dataset)
-    logger.info(
-        "Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-            test_loss, correct, len(test_loader.dataset), 100.0 * correct / len(test_loader.dataset)
-        )
-    )
 
 
 def model_fn(model_dir):
@@ -232,16 +181,22 @@ def model_fn(model_dir):
 
 
 def save_model(model, model_dir):
+    # Model is saved both as a deployment torchscript as well as a normal pth file
+    # for evaluation in the pipeline
     logger.info("Saving the model.")
-    path = os.path.join(model_dir, "model.pth")
-    # recommended way from http://pytorch.org/docs/master/notes/serialization.html
-    torch.save(model.cpu().state_dict(), path)
+    path = os.path.join(model_dir, "model.pt")
+    torch.jit.script(model.cpu()).save(path)
     inference_code_path = model_dir + "/code/"
+
     if not os.path.exists(inference_code_path):
         os.mkdir(inference_code_path)
         logger.info("Created a folder at {}!".format(inference_code_path))
     shutil.copy("inference.py", inference_code_path)
     make_tarfile(os.path.join(model_dir, "model.tar.gz"), model_dir)
+
+    # Save a separate normal version for evaluation container outside of tarball
+    path = os.path.join(model_dir, "model.pth")
+    torch.save(model.cpu().state_dict(), path)
 
 
 if __name__ == "__main__":
@@ -255,13 +210,7 @@ if __name__ == "__main__":
         metavar="N",
         help="input batch size for training (default: 64)",
     )
-    parser.add_argument(
-        "--test-batch-size",
-        type=int,
-        default=1000,
-        metavar="N",
-        help="input batch size for testing (default: 1000)",
-    )
+
     parser.add_argument(
         "--epochs",
         type=int,
