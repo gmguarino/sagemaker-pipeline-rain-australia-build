@@ -220,7 +220,7 @@ def get_pipeline(
         role=role,
     )
     step_process = ProcessingStep(
-        name="PreprocessAbaloneData",
+        name="PreprocessRainAuData",
         processor=sklearn_processor,
         outputs=[
             ProcessingOutput(output_name="train",
@@ -261,7 +261,6 @@ def get_pipeline(
             )
         }
     )
-
 
     pytorch_processor = FrameworkProcessor(
         PyTorch,
