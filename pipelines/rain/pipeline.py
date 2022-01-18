@@ -177,11 +177,12 @@ def get_pipeline(
         an instance of a pipeline
     """
     logger.info("Get session and role")
-    print("is this logged_ pipeline")
     sagemaker_session = get_session(region, default_bucket)
     if role is None:
-        role = sagemaker.session.get_execution_role(sagemaker_session)
+        print("Get role")
 
+        role = sagemaker.session.get_execution_role(sagemaker_session)
+    print("Define parameters")
     logger.debug("Define parameters")
 
     # parameters for pipeline execution
