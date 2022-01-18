@@ -1,6 +1,16 @@
-"""Feature engineers the abalone dataset."""
-import argparse
 import logging
+import sys
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+
+logger.debug("this is the preprocessing script")
+
+def test():
+    raise ValueError("test")
+test()
+
+import argparse
 import os
 import pathlib
 import pickle
@@ -15,35 +25,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
 
 
-# Since we get a headerless CSV file we specify the column names here.
-feature_columns_names = [
-    "sex",
-    "length",
-    "diameter",
-    "height",
-    "whole_weight",
-    "shucked_weight",
-    "viscera_weight",
-    "shell_weight",
-]
-label_column = "rings"
-
-feature_columns_dtype = {
-    "sex": str,
-    "length": np.float64,
-    "diameter": np.float64,
-    "height": np.float64,
-    "whole_weight": np.float64,
-    "shucked_weight": np.float64,
-    "viscera_weight": np.float64,
-    "shell_weight": np.float64,
-}
-label_column_dtype = {"rings": np.float64}
 
 
 def merge_two_dicts(x, y):
@@ -58,12 +41,8 @@ def cyclical_encode(data, col, max_val):
     data[col + '_cos'] = np.cos(2 * np.pi * data[col]/max_val)
     return data
 
-def test():
-    raise ValueError("test")
-
 
 if __name__ == "__main__":
-    test()
 
     logger.debug("Starting preprocessing.")
     parser = argparse.ArgumentParser()
