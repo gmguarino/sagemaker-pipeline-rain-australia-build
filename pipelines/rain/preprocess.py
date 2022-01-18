@@ -58,6 +58,9 @@ def cyclical_encode(data, col, max_val):
     data[col + '_cos'] = np.cos(2 * np.pi * data[col]/max_val)
     return data
 
+def test():
+    raise ValueError("test")
+
 
 if __name__ == "__main__":
     logger.debug("Starting preprocessing.")
@@ -71,8 +74,7 @@ if __name__ == "__main__":
     bucket = input_data.split("/")[2]
     key = "/".join(input_data.split("/")[3:])
 
-    def test():
-        raise ValueError("test")
+    test()
 
     logger.debug("Downloading data from bucket: %s, key: %s", bucket, key)
     fn = f"{base_dir}/data/rain-au-dataset.csv"
