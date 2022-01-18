@@ -55,7 +55,7 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler(sys.stloggerdout))
+logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.debug("Entered script")
 logger.info("Entered script")
 
