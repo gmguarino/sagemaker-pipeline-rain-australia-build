@@ -39,21 +39,22 @@ def cyclical_encode(data, col, max_val):
 if __name__ == "__main__":
 
     logger.debug("Starting preprocessing.")
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input-data", type=str, required=True)
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--input-data", type=str, required=True)
+    # args = parser.parse_args()
 
     base_dir = "/opt/ml/processing"
-    pathlib.Path(f"{base_dir}/data").mkdir(parents=True, exist_ok=True)
-    input_data = args.input_data
-    bucket = input_data.split("/")[2]
-    key = "/".join(input_data.split("/")[3:])
+    # pathlib.Path(f"{base_dir}/data").mkdir(parents=True, exist_ok=True)
+    # input_data = args.input_data
+    # bucket = input_data.split("/")[2]
+    # key = "/".join(input_data.split("/")[3:])
 
 
-    logger.debug("Downloading data from bucket: %s, key: %s", bucket, key)
-    fn = f"{base_dir}/data/rain-au-dataset.csv"
-    s3 = boto3.resource("s3")
-    s3.Bucket(bucket).download_file(key, fn)
+    # logger.debug("Downloading data from bucket: %s, key: %s", bucket, key)
+    # fn = f"{base_dir}/data/rain-au-dataset.csv"
+    fn = f"{base_dir}/input/rain-au-dataset.csv"
+    # s3 = boto3.resource("s3")
+    # s3.Bucket(bucket).download_file(key, fn)
     
 
     logger.debug("Reading downloaded data.")
