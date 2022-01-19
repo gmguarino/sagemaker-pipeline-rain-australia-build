@@ -20,9 +20,7 @@ from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-pathlib.Path("/opt/ml/processing/logs").mkdir(parents=True, exist_ok=True)
-
-logger.addHandler(logging.FileHandler("/opt/ml/processing/logs/log.log"))
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def merge_two_dicts(x, y):
