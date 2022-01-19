@@ -1,8 +1,6 @@
 import logging
 import sys
 
-
-
 import argparse
 import os
 import pathlib
@@ -52,7 +50,7 @@ if __name__ == "__main__":
 
     # logger.debug("Downloading data from bucket: %s, key: %s", bucket, key)
     # fn = f"{base_dir}/data/rain-au-dataset.csv"
-    fn = f"{base_dir}/input/rain-au-dataset.csv"
+    fn = f"{base_dir}/input/weatherAUS.csv"
     # s3 = boto3.resource("s3")
     # s3.Bucket(bucket).download_file(key, fn)
     
