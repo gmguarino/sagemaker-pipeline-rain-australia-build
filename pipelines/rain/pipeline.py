@@ -224,7 +224,7 @@ def get_pipeline(
         instance_type=processing_instance_type,
         instance_count=processing_instance_count,
         volume_size_in_gb=15,
-        base_job_name=f"{base_job_prefix}/sklearn-rain-au-preprocess",
+        base_job_name=f"{base_job_prefix}-sklearn-preprocess",
         command=["python3"],
         sagemaker_session=sagemaker_session,
         role=role,
@@ -254,7 +254,7 @@ def get_pipeline(
                             instance_count=1,
                             framework_version='1.8.0',
                             py_version='py3',
-                            base_job_name=f"{base_job_prefix}/torch-rain-au-train",
+                            base_job_name=f"{base_job_prefix}-torch-train",
                             output_path=model_path,
                             hyperparameters={'epochs': 1, 'batch-size': 32, 'learning-rate': 0.00009},
                             role=role)
@@ -286,7 +286,7 @@ def get_pipeline(
         instance_type=processing_instance_type,
         instance_count=1,
         framework_version='1.8.0',
-        base_job_name=f"{base_job_prefix}/torch-rain-au-eval",
+        base_job_name=f"{base_job_prefix}-torch-eval",
         sagemaker_session=sagemaker_session,
         role=role,
         command=["python3"],
@@ -410,5 +410,6 @@ def get_pipeline(
     #         |- requirements.txt 
 
     # Need a registration step that gets the saved pytorch model tarball and then does puts it in registry.
+    # TODO: REMOVE JIT LEAVE AS NORMAL MODEL
     print("done")
     return pipeline

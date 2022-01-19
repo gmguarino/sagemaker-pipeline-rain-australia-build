@@ -247,3 +247,5 @@ if __name__ == "__main__":
     parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
 
     train(parser.parse_args())
+
+    # TODO: REMOVE JIT LEAVE AS NORMAL MODEL
