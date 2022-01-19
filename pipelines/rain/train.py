@@ -153,7 +153,7 @@ def train(args):
             data, target = data.to(device), target.to(device)
             optimizer.zero_grad()
             output = model(data)
-            loss = F.binary_cross_entropy(output, target)
+            loss = F.binary_cross_entropy(output.squeeze(), target.squeeze())
             loss.backward()
             if is_distributed and not use_cuda:
                 # average gradients manually for multi-machine cpu case only
