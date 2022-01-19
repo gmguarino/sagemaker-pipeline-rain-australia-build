@@ -240,19 +240,12 @@ def get_pipeline(
                              source="/opt/ml/processing/validation"),
             ProcessingOutput(output_name="test",
                              source="/opt/ml/processing/test"),
-            ProcessingOutput(output_name="test",
-                             source="/opt/ml/processing/test"),
             ProcessingOutput(output_name="scaler",
                              source="/opt/ml/processing/preprocess"),
-            ProcessingOutput(output_name="log",
-                             source="/opt/ml/processing/logs"),
         ],
         code=os.path.join(BASE_DIR, "preprocess.py"),
         job_arguments=["--input-data", input_data],
     )
-    print(step_process.properties.ProcessingOutputConfig.Outputs[
-                    "log"
-                ].S3Output.S3Uri)
 
     model_path = f"s3://{sagemaker_session.default_bucket()}/{base_job_prefix}/model"
     print("training")
