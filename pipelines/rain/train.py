@@ -187,15 +187,15 @@ def save_model(model, model_dir):
     logger.info("Saving the model.")
     path = os.path.join(model_dir, "model.pt")
     torch.save(model.cpu().state_dict(), path)
-    inference_code_path = model_dir + "/code/"
+    # inference_code_path = model_dir + "/code/"
 
-    # if not os.path.exists(inference_code_path):
-    #     os.mkdir(inference_code_path)
-    #     logger.info("Created a folder at {}!".format(inference_code_path))
-    pathlib.Path(inference_code_path).mkdir(parents=True, exist_ok=True)
-    base_dir = os.path.dirname(os.path.realpath(__file__))
-    shutil.copy(os.path.join(base_dir,"inference.py"), inference_code_path)
-    make_tarfile(os.path.join(model_dir, "model.tar.gz"), model_dir)
+    # # if not os.path.exists(inference_code_path):
+    # #     os.mkdir(inference_code_path)
+    # #     logger.info("Created a folder at {}!".format(inference_code_path))
+    # pathlib.Path(inference_code_path).mkdir(parents=True, exist_ok=True)
+    # base_dir = os.path.dirname(os.path.realpath(__file__))
+    # shutil.copy(os.path.join(base_dir,"inference.py"), inference_code_path)
+    # make_tarfile(os.path.join(model_dir, "model.tar.gz"), model_dir)
 
 
 if __name__ == "__main__":
