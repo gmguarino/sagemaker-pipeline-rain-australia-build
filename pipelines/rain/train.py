@@ -185,7 +185,7 @@ def save_model(model, model_dir):
     # for evaluation in the pipeline
     logger.info("Saving the model.")
     path = os.path.join(model_dir, "model.pt")
-    torch.jit.script(model.cpu()).save(path)
+    torch.save(model.cpu().state_dict(), path)
     inference_code_path = model_dir + "/code/"
 
     if not os.path.exists(inference_code_path):
@@ -193,10 +193,6 @@ def save_model(model, model_dir):
         logger.info("Created a folder at {}!".format(inference_code_path))
     shutil.copy("inference.py", inference_code_path)
     make_tarfile(os.path.join(model_dir, "model.tar.gz"), model_dir)
-
-    # Save a separate normal version for evaluation container outside of tarball
-    path = os.path.join(model_dir, "model.pth")
-    torch.save(model.cpu().state_dict(), path)
 
 
 if __name__ == "__main__":
