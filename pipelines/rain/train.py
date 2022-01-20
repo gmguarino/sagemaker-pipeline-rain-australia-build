@@ -5,6 +5,7 @@ import os
 import sys
 import shutil
 import tarfile
+import pathlib
 
 import pandas as pd
 import numpy as np
@@ -188,10 +189,12 @@ def save_model(model, model_dir):
     torch.save(model.cpu().state_dict(), path)
     inference_code_path = model_dir + "/code/"
 
-    if not os.path.exists(inference_code_path):
-        os.mkdir(inference_code_path)
-        logger.info("Created a folder at {}!".format(inference_code_path))
-    shutil.copy("inference.py", inference_code_path)
+    # if not os.path.exists(inference_code_path):
+    #     os.mkdir(inference_code_path)
+    #     logger.info("Created a folder at {}!".format(inference_code_path))
+    pathlib.Path(inference_code_path).mkdir(parents=True, exist_ok=True)
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+    shutil.copy(os.path.join(base_dir,"inference.py"), inference_code_path)
     make_tarfile(os.path.join(model_dir, "model.tar.gz"), model_dir)
 
 
