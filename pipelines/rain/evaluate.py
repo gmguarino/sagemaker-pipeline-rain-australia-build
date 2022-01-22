@@ -137,8 +137,8 @@ if __name__ == "__main__":
     logger.debug("Loading Model...")
     model_path = "/opt/ml/processing/model/"
     model = model_fn(model_dir=model_path).to(device)
-    if num_gpus > 1:
-        model = torch.nn.DataParallel(model)
+    # if num_gpus > 1:
+    model = torch.nn.DataParallel(model)
 
     logger.debug("Loading DataLoader...")
     validation_folder = "/opt/ml/processing/validation"
