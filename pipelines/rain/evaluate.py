@@ -8,6 +8,8 @@ import argparse
 import pandas as pd
 import numpy as np
 
+import tarfile
+
 #import sagemaker_containers
 import torch
 import torch.nn as nn
@@ -99,7 +101,7 @@ def test(model, test_loader, device):
         result_dict[key] = mean
             
     test_loss /= len(test_loader.dataset)
-    logger.debug(
+    logger.info(
         "Test set stats: \n Num examples: {},  \n {}".format(result_dict, result_dict)
     )
     return {"regression_metrics": result_dict}
@@ -107,7 +109,9 @@ def test(model, test_loader, device):
 
 def model_fn(model_dir):
     model = Net()
-    with open(os.path.join(model_dir, 'model.pth'), 'rb') as f:
+    with tarfile.open(os.path.join(model_dir, 'model.tar.gz'), "r:gz") as tar:
+        tar.extractall(".")
+    with open(os.path.join('model.pth'), 'rb') as f:
         model.load_state_dict(torch.load(f))
     return model
 
@@ -133,7 +137,8 @@ if __name__ == "__main__":
     logger.debug("Loading Model...")
     model_path = "/opt/ml/processing/model/"
     model = model_fn(model_dir=model_path).to(device)
-    model = torch.nn.DataParallel(model)
+    if args.num_gpus > 1:
+        model = torch.nn.DataParallel(model)
 
     logger.debug("Loading DataLoader...")
     validation_folder = "/opt/ml/processing/validation"
