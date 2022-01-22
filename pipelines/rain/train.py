@@ -185,7 +185,7 @@ def save_model(model, model_dir):
     # Model is saved both as a deployment torchscript as well as a normal pth file
     # for evaluation in the pipeline
     logger.info("Saving the model.")
-    path = os.path.join(model_dir, "model.pt")
+    path = os.path.join(model_dir, "model.pth")
     torch.save(model.cpu().state_dict(), path)
     # inference_code_path = model_dir + "/code/"
 
