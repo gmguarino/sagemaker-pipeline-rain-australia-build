@@ -83,7 +83,7 @@ def _get_test_data_loader(test_batch_size, test_dir, test_file="test.csv", **kwa
     )
 
 def format_target(target):
-    return target.to("cpu").numpy().round().astype(np.uint)
+    return target.to("cpu").squeeze().numpy().round().astype(np.uint)
 
 def test(model, test_loader, device):
     model.eval()
@@ -95,10 +95,10 @@ def test(model, test_loader, device):
             data, target = data.to(device), target.to(device)
             output = model(data)
             test_loss += F.binary_cross_entropy(output.squeeze(), target.squeeze(), size_average=False).item()  # sum up batch loss
-            result_dict["accuracy"].append(accuracy_score(format_target(target), data.to("cpu").numpy()))
-            result_dict["precision"].append(precision_score(format_target(target), data.to("cpu").numpy()))
-            result_dict["recall"].append(recall_score(format_target(target), data.to("cpu").numpy()))
-            result_dict["f1_score"].append(f1_score(format_target(target), data.to("cpu").numpy()))
+            result_dict["accuracy"].append(accuracy_score(format_target(target), format_target(output)))
+            result_dict["precision"].append(precision_score(format_target(target), format_target(output)))
+            result_dict["recall"].append(recall_score(format_target(target), format_target(output)))
+            result_dict["f1_score"].append(f1_score(format_target(target), format_target(output)))
 
     for key in result_dict.keys():
         mean = sum(result_dict[key]) / len(result_dict[key])
