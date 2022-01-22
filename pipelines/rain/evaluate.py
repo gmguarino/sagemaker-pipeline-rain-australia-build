@@ -66,7 +66,7 @@ class Net(nn.Module):
         x = F.dropout(x, p=0.25, training=self.training)
         x = F.relu(self.fc4(x))
         x = F.dropout(x, p=0.5, training=self.training)
-        return F.sigmoid(self.out(x))
+        return torch.sigmoid(self.out(x))
 
 
 def _get_test_data_loader(test_batch_size, test_dir, test_file="test.csv", **kwargs):
@@ -94,7 +94,7 @@ def test(model, test_loader, device):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.binary_cross_entropy(output.squeeze(), target.squeeze(), size_average=False).item()  # sum up batch loss
+            test_loss += F.binary_cross_entropy(output.squeeze(), target.squeeze(), reduction="sum").item()  # sum up batch loss
             result_dict["accuracy"].append(accuracy_score(format_target(target), format_target(output)))
             result_dict["precision"].append(precision_score(format_target(target), format_target(output)))
             result_dict["recall"].append(recall_score(format_target(target), format_target(output)))
