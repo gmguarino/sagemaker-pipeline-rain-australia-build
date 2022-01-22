@@ -41,9 +41,9 @@ class RainDataset(Dataset):
         single_label = self.labels[idx]
 
         data_array = np.asarray(self.data.iloc[idx, 1:])
-        feature_tensor = torch.from_numpy(data_array)
+        feature_tensor = torch.tensor(data_array, dtype=torch.float32)
 
-        return (feature_tensor, single_label)
+        return (feature_tensor, np.float32(single_label))
 
 
 #  Simple ANN for binary classification
