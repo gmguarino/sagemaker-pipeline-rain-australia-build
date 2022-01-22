@@ -126,18 +126,18 @@ if __name__ == "__main__":
         metavar="N",
         help="input batch size for testing (default: 1000)",
     )
-    parser.add_argument("--num-gpus", type=int, default=os.environ["SM_NUM_GPUS"])
     args = parser.parse_args()
+    num_gpus = torch.cuda.device_count()
 
-    use_cuda = args.num_gpus > 0
-    logger.debug("Number of gpus available - {}".format(args.num_gpus))
+    use_cuda = num_gpus > 0
+    logger.debug("Number of gpus available - {}".format(num_gpus))
     kwargs = {"num_workers": 1, "pin_memory": True} if use_cuda else {}
     device = torch.device("cuda" if use_cuda else "cpu")
 
     logger.debug("Loading Model...")
     model_path = "/opt/ml/processing/model/"
     model = model_fn(model_dir=model_path).to(device)
-    if args.num_gpus > 1:
+    if num_gpus > 1:
         model = torch.nn.DataParallel(model)
 
     logger.debug("Loading DataLoader...")
