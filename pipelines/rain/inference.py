@@ -1,3 +1,4 @@
+from ast import Raise
 import os
 import json
 import pickle
@@ -33,12 +34,22 @@ class Net(nn.Module):
         return F.sigmoid(self.out(x))
 
 
+def find(name, path):
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
+
+
 def model_fn(model_dir):
     model = Net()
     logging.debug(os.listdir(model_dir))
     with tarfile.open(os.path.join(model_dir, 'model.tar.gz'), "r:gz") as tar:
         tar.extractall(".")
-    model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pt')))
+    if find("model.pt", model_dir) is not None:
+        model.load_state_dict(torch.load(find("model.pt", model_dir)))
+        # model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pt')))
+    else:
+        raise FileNotFoundError(f"Cannot find model.pt, contents of dir are {os.listdir(model_dir)}")
     model.to(device)
     model = torch.nn.DataParallel(model)
     model.eval()
