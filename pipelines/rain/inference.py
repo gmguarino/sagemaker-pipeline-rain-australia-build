@@ -56,6 +56,14 @@ def model_fn(model_dir):
     return model
 
 
+# def model_fn(model_dir):
+#     if find("model.pt", model_dir) is not None:
+#     model = Net().to(device)
+#     model = torch.nn.DataParallel(model)
+#     model.eval()
+#     return model
+
+
 def input_fn(request_body, request_content_type):
     """An input_fn that loads a pickled tensor"""
     if request_content_type == 'application/python-pickle':
