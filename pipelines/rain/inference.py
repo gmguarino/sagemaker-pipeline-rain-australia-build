@@ -40,28 +40,29 @@ def find(name, path):
             return os.path.join(root, name)
 
 
-def model_fn(model_dir):
-    model = Net()
-    logging.debug(os.listdir(model_dir))
-    with tarfile.open(os.path.join(model_dir, 'model.tar.gz'), "r:gz") as tar:
-        tar.extractall(".")
-    if find("model.pt", model_dir) is not None:
-        model.load_state_dict(torch.load(find("model.pt", model_dir)))
-        # model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pt')))
-    else:
-        raise FileNotFoundError(f"Cannot find model.pt, contents of dir are {os.listdir(model_dir)}")
-    model.to(device)
-    model = torch.nn.DataParallel(model)
-    model.eval()
-    return model
-
-
 # def model_fn(model_dir):
+#     model = Net()
+#     # logging.debug(os.listdir(model_dir))
+#     with tarfile.open(os.path.join(model_dir, 'model.tar.gz'), "r:gz") as tar:
+#         tar.extractall(".")
 #     if find("model.pt", model_dir) is not None:
-#     model = Net().to(device)
+#         model.load_state_dict(torch.load(find("model.pt", model_dir)))
+#         # model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pt')))
+#     else:
+#         raise FileNotFoundError(f"Cannot find model.pt, contents of dir are {os.listdir(model_dir)}")
+#     model.to(device)
 #     model = torch.nn.DataParallel(model)
 #     model.eval()
 #     return model
+
+
+def model_fn(model_dir):
+    model = Net()
+    model.load_state_dict(torch.load(find("model.pt", model_dir)))
+    model = model.to(device)
+    model = torch.nn.DataParallel(model)
+    model.eval()
+    return model
 
 
 def input_fn(request_body, request_content_type):
