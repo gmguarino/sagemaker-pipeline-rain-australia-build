@@ -109,6 +109,7 @@ def test(model, test_loader, device):
 
 def model_fn(model_dir):
     model = Net()
+    model = torch.nn.DataParallel(model)
     with tarfile.open(os.path.join(model_dir, 'model.tar.gz'), "r:gz") as tar:
         tar.extractall(".")
     with open(os.path.join('model.pt'), 'rb') as f:
@@ -138,7 +139,7 @@ if __name__ == "__main__":
     model_path = "/opt/ml/processing/model/"
     model = model_fn(model_dir=model_path).to(device)
     # if num_gpus > 1:
-    model = torch.nn.DataParallel(model)
+    # model = torch.nn.DataParallel(model)
 
     logger.debug("Loading DataLoader...")
     validation_folder = "/opt/ml/processing/validation"
