@@ -2,10 +2,14 @@ import os
 import json
 import pickle
 import tarfile
+import logging
 
 import torch
 import numpy as np
 from six import BytesIO
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -31,6 +35,7 @@ class Net(nn.Module):
 
 def model_fn(model_dir):
     model = Net()
+    logging.debug(os.listdir(model_dir))
     with tarfile.open(os.path.join(model_dir, 'model.tar.gz'), "r:gz") as tar:
         tar.extractall(".")
     model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pt')))
