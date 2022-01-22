@@ -111,7 +111,7 @@ def model_fn(model_dir):
     model = Net()
     with tarfile.open(os.path.join(model_dir, 'model.tar.gz'), "r:gz") as tar:
         tar.extractall(".")
-    with open(os.path.join('model.pth'), 'rb') as f:
+    with open(os.path.join('model.pt'), 'rb') as f:
         model.load_state_dict(torch.load(f))
     return model
 
