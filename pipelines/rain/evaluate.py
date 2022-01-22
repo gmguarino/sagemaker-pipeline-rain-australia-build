@@ -4,6 +4,7 @@ import logging
 import pathlib
 import os
 import argparse
+import sys
 
 import pandas as pd
 import numpy as np
@@ -23,7 +24,7 @@ from sklearn.metrics import (accuracy_score,
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 # Dataset class to handle data loading
 class RainDataset(Dataset):
