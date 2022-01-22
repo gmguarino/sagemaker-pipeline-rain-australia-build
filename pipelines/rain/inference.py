@@ -32,6 +32,7 @@ def model_fn(model_dir):
     model = Net()
     model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pt')))
     model.to(device)
+    model = torch.nn.DataParallel(model)
     model.eval()
     return model
 
