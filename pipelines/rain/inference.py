@@ -1,6 +1,7 @@
 import os
 import json
 import pickle
+import tarfile
 
 import torch
 import numpy as np
@@ -30,6 +31,8 @@ class Net(nn.Module):
 
 def model_fn(model_dir):
     model = Net()
+    with tarfile.open(os.path.join(model_dir, 'model.tar.gz'), "r:gz") as tar:
+        tar.extractall(".")
     model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pt')))
     model.to(device)
     model = torch.nn.DataParallel(model)
