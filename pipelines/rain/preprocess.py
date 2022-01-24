@@ -4,7 +4,7 @@ import sys
 import argparse
 import os
 import pathlib
-import pickle
+import json
 import joblib
 import tarfile
 
@@ -17,6 +17,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
+from io import StringIO
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -174,18 +175,8 @@ def input_fn(input_data, content_type):
     and unlabelled data we first determine whether the label column is present
     by looking at how many columns were provided.
     """
-    if content_type == "text/csv":
-        # Read the raw input data as CSV.
-        df = pd.read_csv(StringIO(input_data), header=None)
-
-        if len(df.columns) == len(feature_columns) + 1:
-            # This is a labelled example, includes the ring label
-            df.columns = feature_columns + [label_column]
-        elif len(df.columns) == len(feature_columns):
-            # This is an unlabelled example.
-            df.columns = feature_columns
-
-        return df
+    if content_type == "application/json":
+        return json.loads(input_data)["data"]
     else:
         raise ValueError("{} not supported by script!".format(content_type))
 
@@ -201,13 +192,11 @@ def output_fn(prediction, accept):
         instances = []
         for row in prediction.tolist():
             instances.append(row)
-        json_output = {"instances": instances}
+        json_output = {"data": instances}
 
-        return worker.Response(json.dumps(json_output), mimetype=accept)
-    elif accept == "text/csv":
-        return worker.Response(encoders.encode(prediction, accept), mimetype=accept)
+        return json.dumps(json_output)
     else:
-        raise RuntimeException("{} accept type is not supported by this script.".format(accept))
+        raise RuntimeError("{} accept type is not supported by this script.".format(accept))
 
 
 def predict_fn(input_data, model):
@@ -222,12 +211,7 @@ def predict_fn(input_data, model):
     """
     features = model.transform(input_data)
 
-    if label_column in input_data:
-        # Return the label (as the first column) and the set of features.
-        return np.insert(features, 0, input_data[label_column], axis=1)
-    else:
-        # Return only the set of features
-        return features
+    return features
 
 
 def model_fn(model_dir):
