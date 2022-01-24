@@ -168,6 +168,7 @@ if __name__ == "__main__":
     with tarfile.open(f"{base_dir}/preprocess/model.tar.gz", "w:gz") as tf:
         tf.add(f"model.joblib")
 
+
 def input_fn(input_data, content_type):
     """Parse input data payload
 

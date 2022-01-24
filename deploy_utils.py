@@ -2,14 +2,10 @@
 # In production there is a separate repository that builds the code
 
 
-from asyncio.log import logger
-from multiprocessing.connection import Client
+
 import boto3
-import argparse
 import logging
-import os
-import zipfile
-import tarfile
+
 
 from botocore.exceptions import ClientError
 
