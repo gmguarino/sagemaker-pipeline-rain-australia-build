@@ -5,6 +5,8 @@ import argparse
 import os
 import pathlib
 import pickle
+import joblib
+import tarfile
 
 import boto3
 import numpy as np
@@ -161,5 +163,7 @@ if __name__ == "__main__":
     )
     test.to_csv(f"{base_dir}/test/test.csv", header=True, index=False)
     pathlib.Path(f"{base_dir}/preprocess").mkdir(parents=True, exist_ok=True)
-    with open(f"{base_dir}/preprocess/scaler.pkl", 'wb') as dump_var:
-        pickle.dump(s_scaler, dump_var)
+    joblib.dump(s_scaler, "model.joblib")
+    with tarfile.open(f"{base_dir}/preprocess/model.tar.gz", "w:gz") as tf:
+        tf.add(f"model.joblib")
+
